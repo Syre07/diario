@@ -3,61 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inserimento Codici</title>
-    <script>
-        let codici = [];
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxMfFiBFJFvikopVF4mf7OkyxsbtNsMOdDYwJlP6cpphZ6y47h8CnqbadjX4iLpRXMx/exec";
-
-        function aggiungiCodice(event) {
-            event.preventDefault();
-            let input = document.getElementById("codice");
-            let codice = input.value.trim();
-            if (codice) {
-                codici.push(parseInt(codice, 10));
-                input.value = "";
-                input.focus();
-            }
-        }
-
-        function terminaInserimento() {
-            if (codici.length === 0) return;
-
-            fetch(scriptURL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "salva", codici })
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message))
-            .catch(error => console.error("Errore:", error));
-
-            visualizzaCodici();
-        }
-
-        function visualizzaCodici() {
-            fetch(scriptURL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "leggi" })
-            })
-            .then(response => response.json())
-            .then(codici => {
-                document.body.innerHTML = `<h1>Codici Inseriti</h1>`;
-                document.body.innerHTML += `<p>Numero totale: <strong>${codici.length}</strong></p>`;
-                document.body.innerHTML += `<ul>${codici.map(c => `<li>${c}</li>`).join('')}</ul>`;
-                document.body.innerHTML += `<button onclick="location.reload()">Torna all'inserimento</button>`;
-            })
-            .catch(error => console.error("Errore:", error));
-        }
-    </script>
+    <title>Gestione Codici</title>
 </head>
 <body>
     <h1>Inserisci Codici</h1>
-    <form onsubmit="aggiungiCodice(event)">
-        <input type="number" id="codice" autofocus required>
-        <button type="submit">Aggiungi</button>
-    </form>
-    <button onclick="terminaInserimento()">Termina</button>
-    <button onclick="visualizzaCodici()">Visualizza Codici Salvati</button>
+    <textarea id="codici" rows="5" cols="30" placeholder="Inserisci i codici separati da una virgola..."></textarea>
+    <br>
+    <button onclick="terminaInserimento()">Invia Codici</button>
+    <button onclick="visualizzaCodici()">Visualizza Codici</button>
+    
+    <h2>Codici Salvati:</h2>
+    <ul id="listaCodici"></ul>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxMfFiBFJFvikopVF4mf7OkyxsbtNsMOdDYwJlP6cpphZ6y47h8CnqbadjX4iLpRXMx/exec";
+
+        async function terminaInserimento() {
+            const input = document.getElementById("codici").value;
+            const codiciArray = input.split(",").map(c => c.trim()).filter(c => c !== "");
+
+            if (codiciArray.length === 0) {
+                alert("Inserisci almeno un codice!");
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "salva", codici: codiciArray })
+                });
+
+                const data = await response.json();
+                alert(data.message || "Codici salvati con successo!");
+            } catch (error) {
+                console.error("Errore:", error);
+                alert("Errore durante il salvataggio.");
+            }
+        }
+
+        async function visualizzaCodici() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "leggi" })
+                });
+
+                const codici = await response.json();
+                const lista = document.getElementById("listaCodici");
+                lista.innerHTML = "";
+
+                codici.forEach(codice => {
+                    const li = document.createElement("li");
+                    li.textContent = codice;
+                    lista.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Errore:", error);
+                alert("Errore durante il recupero dei codici.");
+            }
+        }
+    </script>
 </body>
 </html>
