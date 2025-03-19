@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inserimento Codici</title>
+    <script>
+        let codici = [];
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwNp10y0u8OMVatgqyNbvjeM2D5Cpf1Ph4P-DABjLeA6HdTMe_vuJDm51rfsIMtK3QS/exec";
+
+        function aggiungiCodice(event) {
+            event.preventDefault();
+            let input = document.getElementById("codice");
+            let codice = input.value.trim();
+            if (codice) {
+                codici.push(parseInt(codice, 10));
+                input.value = "";
+                input.focus();
+            }
+        }
+
+        function terminaInserimento() {
+            if (codici.length === 0) return;
+
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "salva", codici })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error("Errore:", error));
+
+            visualizzaCodici();
+        }
+
+        function visualizzaCodici() {
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "leggi" })
+            })
+            .then(response => response.json())
+            .then(codici => {
+                document.body.innerHTML = `<h1>Codici Inseriti</h1>`;
+                document.body.innerHTML += `<p>Numero totale: <strong>${codici.length}</strong></p>`;
+                document.body.innerHTML += `<ul>${codici.map(c => `<li>${c}</li>`).join('')}</ul>`;
+                document.body.innerHTML += `<button onclick="location.reload()">Torna all'inserimento</button>`;
+            })
+            .catch(error => console.error("Errore:", error));
+        }
+    </script>
+</head>
+<body>
+    <h1>Inserisci Codici</h1>
+    <form onsubmit="aggiungiCodice(event)">
+        <input type="number" id="codice" autofocus required>
+        <button type="submit">Aggiungi</button>
+    </form>
+    <button onclick="terminaInserimento()">Termina</button>
+    <button onclick="visualizzaCodici()">Visualizza Codici Salvati</button>
+</body>
+</html>
